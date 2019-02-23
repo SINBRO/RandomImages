@@ -1,11 +1,7 @@
 package sinbro.randomimages
 
-import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
-import android.view.MenuItem
-import kotlinx.android.synthetic.main.activity_item_detail.*
 
 class ItemDetailActivity : AppCompatActivity()  {
 
