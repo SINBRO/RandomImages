@@ -1,13 +1,18 @@
 package sinbro.randomimages
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.AsyncTask
 import android.os.Bundle
+import android.os.IBinder
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 import kotlinx.android.synthetic.main.item_list.*
+import sinbro.randomimages.loader.TextLoader
 import sinbro.randomimages.recyclerView.RecyclerViewAdapter
 import java.lang.ref.WeakReference
 import java.net.URL
@@ -17,7 +22,21 @@ class ItemListActivity : AppCompatActivity() {
     private var descriptions = ArrayList<String>()
     private var recyclerElements = ArrayList<Item>()
     private var twoPane = false
-    private var unparsedData: String? = null
+    private var bind = false
+    private var binder : TextLoader.MyBinder? = null
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            bind = true
+            binder = service as TextLoader.MyBinder
+            binder!!.setCallback { p -> parseJSON(p) }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            bind = false
+            binder = null
+        }
+    }
 
     private val DOWNLOAD_LINK =
         "https://api.unsplash.com/photos/random/?count=50&client_id=6f0cf0edd57ca1315fb05e69ca9df7e84298d224541952bb8b6dd595c757dd1c"
@@ -40,7 +59,10 @@ class ItemListActivity : AppCompatActivity() {
             descriptions = savedInstanceState.getStringArrayList("descriptions")
             setupRecyclerView(item_list)
         } else {
-            ItemListActivity.DownloadAsyncTask(WeakReference(this)).execute(URL(DOWNLOAD_LINK))
+            val intent = Intent(this, TextLoader::class.java)
+            intent.putExtra(URL_LINK, DOWNLOAD_LINK)
+            bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+            startService(intent)
         }
     }
 
@@ -58,7 +80,7 @@ class ItemListActivity : AppCompatActivity() {
         recyclerView.adapter = RecyclerViewAdapter(this, recyclerElements, twoPane)
     }
 
-    private class DownloadAsyncTask(val activity: WeakReference<ItemListActivity>) : AsyncTask<URL, Int, String>() {
+    /*private class DownloadAsyncTask(val activity: WeakReference<ItemListActivity>) : AsyncTask<URL, Int, String>() {
         override fun onPostExecute(res: String?) {
             activity.get()?.let {
                 if (res != null) {
@@ -74,9 +96,9 @@ class ItemListActivity : AppCompatActivity() {
                 getInputStream().bufferedReader().readLines().joinToString("")
             }
         }
-    }
+    }*/
 
-    private fun parseJSON() {
+    private fun parseJSON(unparsedData: String) {
         val images = Gson().fromJson<List<Image>>(unparsedData, object : TypeToken<List<Image>>() {}.type)
         for (image in images) {
             descriptions.add(image.user.name!!)
