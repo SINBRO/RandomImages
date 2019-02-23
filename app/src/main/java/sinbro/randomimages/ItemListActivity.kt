@@ -3,7 +3,6 @@ package sinbro.randomimages
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.AsyncTask
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v7.app.AppCompatActivity
@@ -14,26 +13,24 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.item_list.*
 import sinbro.randomimages.loader.TextLoader
 import sinbro.randomimages.recyclerView.RecyclerViewAdapter
-import java.lang.ref.WeakReference
-import java.net.URL
 
 class ItemListActivity : AppCompatActivity() {
     private var imageUrls = ArrayList<String>()
     private var descriptions = ArrayList<String>()
     private var recyclerElements = ArrayList<Item>()
     private var twoPane = false
-    private var bind = false
+    private var serviceBind = false
     private var binder : TextLoader.MyBinder? = null
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            bind = true
+            serviceBind = true
             binder = service as TextLoader.MyBinder
             binder!!.setCallback { p -> parseJSON(p) }
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
-            bind = false
+            serviceBind = false
             binder = null
         }
     }
@@ -79,24 +76,6 @@ class ItemListActivity : AppCompatActivity() {
         }
         recyclerView.adapter = RecyclerViewAdapter(this, recyclerElements, twoPane)
     }
-
-    /*private class DownloadAsyncTask(val activity: WeakReference<ItemListActivity>) : AsyncTask<URL, Int, String>() {
-        override fun onPostExecute(res: String?) {
-            activity.get()?.let {
-                if (res != null) {
-                    it.unparsedData = res
-                    it.parseJSON()
-                }
-            }
-        }
-
-        override fun doInBackground(vararg params: URL): String {
-            return params[0].openConnection().run {
-                connect()
-                getInputStream().bufferedReader().readLines().joinToString("")
-            }
-        }
-    }*/
 
     private fun parseJSON(unparsedData: String) {
         val images = Gson().fromJson<List<Image>>(unparsedData, object : TypeToken<List<Image>>() {}.type)
