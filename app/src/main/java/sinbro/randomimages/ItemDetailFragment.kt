@@ -13,8 +13,6 @@ import android.view.ViewGroup
 import kotlinx.android.synthetic.main.item_detail.*
 import kotlinx.android.synthetic.main.item_detail.view.*
 import sinbro.randomimages.loader.ImageLoader
-import java.lang.ref.WeakReference
-import java.net.URL
 
 
 class ItemDetailFragment : Fragment() {
@@ -50,13 +48,6 @@ class ItemDetailFragment : Fragment() {
         arguments?.let {
             if (it.containsKey(DESCRIPTION) && it.containsKey(IMAGE_URL)) {
                 item = ItemListActivity.Item(it[DESCRIPTION] as String, it[IMAGE_URL] as String)
-
-                if (!serviceBind) {
-                    val intent = Intent(context, ImageLoader::class.java)
-                    intent.putExtra(IMAGE_URL, item?.imageUrl)
-                    activity?.bindService(intent, serviceConnection, AppCompatActivity.BIND_AUTO_CREATE)
-                    activity?.startService(intent)
-                }
             }
 
         }
@@ -69,43 +60,16 @@ class ItemDetailFragment : Fragment() {
 
         item?.let {
             rootView.description.text = it.text
+            if (!serviceBind) {
+                val intent = Intent(context, ImageLoader::class.java)
+                intent.putExtra(IMAGE_URL, item?.imageUrl)
+                activity?.bindService(intent, serviceConnection, AppCompatActivity.BIND_AUTO_CREATE)
+                activity?.startService(intent)
+            }
         }
 
         return rootView
     }
-
-    /*private class DownloadAsyncTask(val activity: WeakReference<ItemDetailFragment>) : AsyncTask<URL, Int, Bitmap>() {
-        override fun onPostExecute(result: Bitmap?) {
-            activity.get()?.rootView?.image?.setImageBitmap(result)
-        }
-
-        override fun doInBackground(vararg params: URL): Bitmap {
-            var res: ByteArray?
-            try {
-                val url = params[0]
-                var connection = url.openConnection()
-                connection.connect()
-                while (connection.contentLength < 0) {
-                    connection = url.openConnection()
-                    connection.connect()
-                }
-                res = ByteArray(connection.contentLength)
-                connection.getInputStream().use { iss ->
-                    var p = 0
-                    var r: Int = iss.read(res, p, res!!.size - p)
-                    while (r > 0){
-                        p += r
-                        r = iss.read(res, p, res!!.size - p)
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                res = null
-            }
-
-            return BitmapFactory.decodeByteArray(res, 0, res!!.size)
-        }
-    }*/
 
     override fun onDestroy() {
         super.onDestroy()
